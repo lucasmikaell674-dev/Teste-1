@@ -1,0 +1,605 @@
+-- 🔵 LocalScript (StarterPlayerScripts) - GUI completa + LockButton Automático
+
+local Players = game:GetService("Players")
+
+local RunService = game:GetService("RunService")
+
+local UserInputService = game:GetService("UserInputService")
+
+local Workspace = game:GetService("Workspace")
+
+local player = Players.LocalPlayer
+
+local character = player.Character or player.CharacterAdded:Wait()
+
+local root = character:WaitForChild("HumanoidRootPart")
+
+-- ===== Variáveis =====
+
+local collectRunning = false
+
+local lastPos = root.Position
+
+local allowed = false
+
+local safeDistance = 15
+
+-- ===== GUI =====
+
+local ScreenGui = Instance.new("ScreenGui")
+
+ScreenGui.Name = "YOv2StealAGUI"
+
+ScreenGui.ResetOnSpawn = false
+
+ScreenGui.Parent = player:WaitForChild("PlayerGui")
+
+local Frame = Instance.new("Frame")
+
+Frame.Size = UDim2.new(0, 320, 0, 320)
+
+Frame.Position = UDim2.new(0.5, -160, 0.5, -160)
+
+Frame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+
+Frame.BorderSizePixel = 0
+
+Frame.Parent = ScreenGui
+
+Frame.Active = true
+
+Frame.Draggable = true
+
+Frame.ClipsDescendants = true
+
+local Gradient = Instance.new("UIGradient")
+
+Gradient.Color = ColorSequence.new({
+
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(30, 30, 30)),
+
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(15, 15, 15))
+
+})
+
+Gradient.Rotation = 45
+
+Gradient.Parent = Frame
+
+local stroke = Instance.new("UIStroke")
+
+stroke.Color = Color3.fromRGB(255, 255, 255)
+
+stroke.Thickness = 2
+
+stroke.Parent = Frame
+
+spawn(function()
+
+    while true do
+
+        local time = tick()
+
+        stroke.Color = Color3.fromHSV(time % 5 / 5, 1, 1)
+
+        task.wait(0.03)
+
+    end
+
+end)
+
+local Title = Instance.new("TextLabel")
+
+Title.Size = UDim2.new(1, 0, 0, 36)
+
+Title.Position = UDim2.new(0, 0, 0, 0)
+
+Title.BackgroundTransparency = 1
+
+Title.Text = "YO v2 Steal a Anime"
+
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+
+Title.Font = Enum.Font.GothamBold
+
+Title.TextSize = 20
+
+Title.Parent = Frame
+
+local MinButton = Instance.new("TextButton")
+
+MinButton.Size = UDim2.new(0, 30, 0, 30)
+
+MinButton.Position = UDim2.new(1, -70, 0, 3)
+
+MinButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+
+MinButton.Text = "-"
+
+MinButton.Font = Enum.Font.GothamBold
+
+MinButton.TextSize = 20
+
+MinButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+
+MinButton.Parent = Frame
+
+MinButton.MouseButton1Click:Connect(function()
+
+    Frame.Size = Frame.Size == UDim2.new(0, 320, 0, 320) and UDim2.new(0, 320, 0, 36) or UDim2.new(0, 320, 0, 320)
+
+end)
+
+local CloseButton = Instance.new("TextButton")
+
+CloseButton.Size = UDim2.new(0, 30, 0, 30)
+
+CloseButton.Position = UDim2.new(1, -35, 0, 3)
+
+CloseButton.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+
+CloseButton.Text = "X"
+
+CloseButton.Font = Enum.Font.GothamBold
+
+CloseButton.TextSize = 18
+
+CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+
+CloseButton.Parent = Frame
+
+CloseButton.MouseButton1Click:Connect(function()
+
+    Frame.Visible = false
+
+end)
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+
+    if gameProcessed then return end
+
+    if input.KeyCode == Enum.KeyCode.LeftAlt then
+
+        Frame.Visible = not Frame.Visible
+
+    end
+
+end)
+
+-- ===== Função para criar botões =====
+
+local function CreateButton(text, posY, color)
+
+    local button = Instance.new("TextButton")
+
+    button.Size = UDim2.new(0, 280, 0, 50)
+
+    button.Position = UDim2.new(0, 20, 0, posY)
+
+    button.BackgroundColor3 = color or Color3.fromRGB(20, 20, 20)
+
+    button.TextColor3 = Color3.fromRGB(255, 255, 255)
+
+    button.Font = Enum.Font.GothamBold
+
+    button.TextSize = 18
+
+    button.Text = text
+
+    button.Parent = Frame
+
+    button.MouseEnter:Connect(function()
+
+        button.BackgroundColor3 = button.BackgroundColor3:Lerp(Color3.fromRGB(40, 40, 40), 0.5)
+
+    end)
+
+    button.MouseLeave:Connect(function()
+
+        button.BackgroundColor3 = color or Color3.fromRGB(20, 20, 20)
+
+    end)
+
+    return button
+
+end
+
+-- ===== Botões principais =====
+
+local CollectButton = CreateButton("CollectParts: OFF", 60)
+
+local TeleportForwardButton = CreateButton("Teleport Forward (F)", 130)
+
+local LockButtonGUI = CreateButton("LockButton Teleport", 200, Color3.fromRGB(0, 170, 255))
+
+-- ===== Status do LockButton (Timer) =====
+
+local LockButtonStatus = Instance.new("TextLabel")
+
+LockButtonStatus.Size = UDim2.new(0, 280, 0, 30)
+
+LockButtonStatus.Position = UDim2.new(0, 20, 0, 270)
+
+LockButtonStatus.BackgroundTransparency = 1
+
+LockButtonStatus.TextColor3 = Color3.fromRGB(255, 255, 255)
+
+LockButtonStatus.Font = Enum.Font.GothamBold
+
+LockButtonStatus.TextSize = 18
+
+LockButtonStatus.Text = "Locked 1m 27s"
+
+LockButtonStatus.Parent = Frame
+
+-- ===== Bases & Parts =====
+
+local basesFolder = Workspace:WaitForChild("Bases")
+
+local function GetClosestBase()
+
+    local closestBase = nil
+
+    local shortestDistance = math.huge
+
+    for i = 1, 9 do
+
+        local base = basesFolder:FindFirstChild(tostring(i))
+
+        if base and base:FindFirstChild("StealCollect2") then
+
+            local part = base.StealCollect2
+
+            local distance = (part.Position - root.Position).Magnitude
+
+            if distance < shortestDistance then
+
+                shortestDistance = distance
+
+                closestBase = base
+
+            end
+
+        end
+
+    end
+
+    return closestBase
+
+end
+
+local savedBase = GetClosestBase()
+
+if not savedBase then
+
+    warn("❌ Nenhuma base encontrada!")
+
+    return
+
+end
+
+local collectFolder = savedBase:WaitForChild("CollectParts")
+
+local parts = {}
+
+local originals = {}
+
+for i = 1, 30 do
+
+    local p = collectFolder:FindFirstChild(tostring(i))
+
+    if p and p:IsA("BasePart") then
+
+        table.insert(parts, p)
+
+        originals[p] = p.CFrame
+
+    end
+
+end
+
+local stealPart = savedBase:WaitForChild("StealCollect2")
+
+local originalStealCFrame = stealPart.CFrame
+
+local lockButtonPart = savedBase:FindFirstChild("LockButton")
+
+if not lockButtonPart then
+
+    warn("❌ LockButton não encontrada!")
+
+end
+
+-- ===== Funções de manipulação de partes =====
+
+local function ApplyPulledState(part)
+
+    part.CanCollide = false
+
+    part.Transparency = 1
+
+    for _, d in ipairs(part:GetDescendants()) do
+
+        if d:IsA("BillboardGui") or d:IsA("SurfaceGui") then
+
+            d.Enabled = false
+
+        end
+
+    end
+
+end
+
+local function RestoreOriginalState(part)
+
+    part.CanCollide = true
+
+    part.Transparency = 0
+
+    for _, d in ipairs(part:GetDescendants()) do
+
+        if d:IsA("BillboardGui") or d:IsA("SurfaceGui") then
+
+            d.Enabled = true
+
+        end
+
+    end
+
+end
+
+-- ===== Botões =====
+
+CollectButton.MouseButton1Click:Connect(function()
+
+    collectRunning = not collectRunning
+
+    CollectButton.Text = collectRunning and "CollectParts: ON" or "CollectParts: OFF"
+
+end)
+
+local function TeleportForward()
+
+    if not root then return end
+
+    allowed = true
+
+    local forward = root.CFrame.LookVector
+
+    local newPos = root.Position + (forward * 12)
+
+    root.CFrame = CFrame.new(newPos, newPos + forward)
+
+    task.wait(0.05)
+
+    allowed = false
+
+    lastPos = root.Position
+
+end
+
+TeleportForwardButton.MouseButton1Click:Connect(TeleportForward)
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+
+    if gameProcessed then return end
+
+    if input.KeyCode == Enum.KeyCode.F then
+
+        TeleportForward()
+
+    end
+
+end)
+
+local function TeleportToLockButton()
+
+    if not lockButtonPart or not root then return end
+
+    allowed = true
+
+    local originalCFrame = root.CFrame
+
+    local targetCFrame = lockButtonPart.CFrame + Vector3.new(0,3,0)
+
+    root.CFrame = targetCFrame
+
+    task.wait(0.5)
+
+    root.CFrame = originalCFrame
+
+    allowed = false
+
+    lastPos = root.Position
+
+end
+
+LockButtonGUI.MouseButton1Click:Connect(TeleportToLockButton)
+
+-- ===== Proteção Anti-Pull =====
+
+RunService.Stepped:Connect(function()
+
+    if not root then
+
+        character = player.Character or player.CharacterAdded:Wait()
+
+        root = character:WaitForChild("HumanoidRootPart")
+
+        return
+
+    end
+
+    local currentPos = root.Position
+
+    local distance = (currentPos - lastPos).Magnitude
+
+    if distance > safeDistance and not allowed then
+
+        pcall(function() root.CFrame = CFrame.new(lastPos) end)
+
+    end
+
+    lastPos = root.Position
+
+end)
+
+-- ===== Loop CollectParts =====
+
+spawn(function()
+
+    while true do
+
+        if collectRunning then
+
+            for _, part in ipairs(parts) do
+
+                if part and part.Parent then
+
+                    ApplyPulledState(part)
+
+                    part.CFrame = root.CFrame
+
+                end
+
+                task.wait(0.01)
+
+                local original = originals[part]
+
+                if original then
+
+                    part.CFrame = original
+
+                    RestoreOriginalState(part)
+
+                end
+
+            end
+
+        end
+
+        task.wait(0.01)
+
+    end
+
+end)
+
+-- ===== Loop StealCollect2 =====
+
+spawn(function()
+
+    while true do
+
+        if stealPart and root then
+
+            pcall(function() stealPart.CFrame = root.CFrame end)
+
+            task.wait(0.001)
+
+            pcall(function() stealPart.CFrame = originalStealCFrame end)
+
+        end
+
+        task.wait(0.001)
+
+    end
+
+end)
+
+-- ===== LockButton Automático com Contador Real =====
+
+local lockButtonCountdown = 87 -- inicial 1m27s
+
+local lockButtonLocked = false
+
+local function IsLockButtonLocked()
+
+    if not lockButtonPart then return false end
+
+    local lockedValue = lockButtonPart:FindFirstChild("Locked")
+
+    if lockedValue and lockedValue:IsA("BoolValue") then
+
+        return lockedValue.Value
+
+    end
+
+    if lockButtonPart.Transparency >= 1 or not lockButtonPart.CanCollide then
+
+        return true
+
+    end
+
+    return false
+
+end
+
+local function AutoTeleportLockButton()
+
+    if not lockButtonPart or not root then return end
+
+    local originalCFrame = root.CFrame
+
+    local targetCFrame = lockButtonPart.CFrame + Vector3.new(0,3,0)
+
+    root.CFrame = targetCFrame
+
+    task.wait(0.5)
+
+    root.CFrame = originalCFrame
+
+    lastPos = root.Position
+
+end
+
+spawn(function()
+
+    while true do
+
+        task.wait(0.1)
+
+        if lockButtonPart then
+
+            lockButtonLocked = IsLockButtonLocked()
+
+            if lockButtonLocked then
+
+                lockButtonCountdown = lockButtonCountdown - 0.1
+
+                if lockButtonCountdown <= 0 then
+
+                    AutoTeleportLockButton()
+
+                    lockButtonCountdown = 87 -- reset para próximo ciclo
+
+                end
+
+            else
+
+                lockButtonCountdown = 87
+
+            end
+
+            local m = math.floor(lockButtonCountdown / 60)
+
+            local s = math.floor(lockButtonCountdown % 60)
+
+            if s < 10 then s = "0"..s end
+
+            LockButtonStatus.Text = "Locked "..m.."m "..s.."s"
+
+        end
+
+    end
+
+end)
+
+-- Atualiza referência ao mudar de character
+
+player.CharacterAdded:Connect(function(char)
+
+    character = char
+
+    root = char:WaitForChild("HumanoidRootPart")
+
+end)
